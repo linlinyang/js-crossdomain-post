@@ -1,9 +1,7 @@
 <html lang="en"><head>
     <meta charset="UTF-8">
-    <title></title>
 </head>
-<body marginheight="0"><p><img src="mahua-logo.jpg" alt="mahua">
-</p>
+<body marginheight="0">
 <h2>MaHua是什么?</h2>
 <p>一个在线编辑markdown文档的编辑器
 

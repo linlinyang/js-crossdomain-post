@@ -1,57 +1,180 @@
-<html lang="en"><head>
-    <meta charset="UTF-8">
-</head>
-<body marginheight="0">
-<h2>MaHua是什么?</h2>
-<p>一个在线编辑markdown文档的编辑器
+# 利用iframe对form表单（含文件上传）进行跨任何域提交，无刷新且可以返回值
 
-</p>
-<p>向Mac下优秀的markdown编辑器mou致敬
+## 常见跨域方法
+1. 利用jsonp跨域，jquery已经封装好了；`缺点：不能跨域上传文件`
+2. 利用form的action提交表单；`缺点：刷新当前页面，交互差`
+3. 设置form的action并设置target指向一个隐藏的iframe；`缺点：无法获取返回值`
 
-</p>
-<h2>MaHua有哪些功能？</h2>
-<ul>
-<li>方便的<code>导入导出</code>功能<ul>
-<li>直接把一个markdown的文本文件拖放到当前这个页面就可以了</li>
-<li>导出为一个html格式的文件，样式一点也不会丢失</li>
-</ul>
-</li>
-<li>编辑和预览<code>同步滚动</code>，所见即所得（右上角设置）</li>
-<li><code>VIM快捷键</code>支持，方便vim党们快速的操作 （右上角设置）</li>
-<li>强大的<code>自定义CSS</code>功能，方便定制自己的展示</li>
-<li>有数量也有质量的<code>主题</code>,编辑器和预览区域</li>
-<li>完美兼容<code>Github</code>的markdown语法</li>
-<li>预览区域<code>代码高亮</code></li>
-<li>所有选项自动记忆</li>
-</ul>
-<h2>有问题反馈</h2>
-<p>在使用中有任何问题，欢迎反馈给我，可以用以下联系方式跟我交流
+##做个测试,我这里没有隐藏iframe以便查看结果
+###client.html
+```html
+<form action="http://localhost/js/server.php" method="post" enctype="multipart/form-data" target="myframe" name="myform">
+		
+	<input type="text" name="uname">
+	<input type="file" name="imgs[]" multiple="multiple">
+	<textarea name="desc"></textarea>
+	<input type="submit" name="submit">
 
-</p>
-<ul>
-<li>邮件(dev.hubo#gmail.com, 把#换成@)</li>
-<li>QQ: 287759234</li>
-<li>weibo: <a href="http://weibo.com/ihubo">@草依山</a></li>
-<li>twitter: <a href="http://twitter.com/ihubo">@ihubo</a></li>
-</ul>
-<h2>捐助开发者</h2>
-<p>在兴趣的驱动下,写一个<code>免费</code>的东西，有欣喜，也还有汗水，希望你喜欢我的作品，同时也能支持一下。
-当然，有钱捧个钱场（右上角的爱心标志，支持支付宝和PayPal捐助），没钱捧个人场，谢谢各位。
+</form>
 
-</p>
-<h2>感激</h2>
-<p>感谢以下的项目,排名不分先后
+<iframe id="myframe" name="myframe" width="300" height="300" ></iframe>
+```
+###如果服务器有返回值的话那么数据应该是返回到这里的iframe，而当前页面是无法获取到子iframe里面的元素除非设置iframe和当前页面是一个域，这样的话虽然可以无刷新提交，但是在跨域的情况下还是无法获取服务端返回结果
+###所以有的人就在服务端返回数据的时候，设置iframe的域名和client的域名相同，然后就可以读取iframe里面的内容了。但是这个跨域相当局限，只能在域名和子域名下进行跨域提交。那么有没有办法让client和子iframe进行跨域通讯呢！答案是：有！
 
-</p>
-<ul>
-<li><a href="http://mouapp.com/">mou</a> </li>
-<li><a href="http://ace.ajax.org/">ace</a></li>
-<li><a href="http://jquery.com">jquery</a></li>
-</ul>
-<h2>关于作者</h2>
-<pre><code class="lang-javascript">  var ihubo = {
-    nickName  : "草依山",
-    site : "http://jser.me"
-  }</code></pre>
-<p>Edit By <a href="http://mahua.jser.me">MaHua</a></p>
-</body></html>
+----------
+
+###postMessage可以向包含在当前页面的iframe或者由当前页面打开的窗口传递数据，兼容性可以兼容至IE5，详情可查看[https://developer.mozilla.org/zh-CN/docs/Web/API/Window/postMessage](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/postMessage "MDN文档")。
+###form提交后，监听iframe的load事件，然后向iframe发送消息，请求返回数据；在服务端就可以监听message事件，然后返回客户端所需要返回的数据；然后在客户端监听message事件，实现client和iframe（伪客户端）的通信；代码如下：
+###客户端js
+```js
+	<script type="text/javascript">
+		
+		var listen = (function(){
+
+				if(window.addEventListener){
+					return function(ele,type,handler){
+						ele.addEventListener(type,handler);
+					}
+				}else if(window.attachEvent){
+					return function(ele,type,handler){
+						ele.attachEvent('on'+type,handler)
+					}
+				}else{
+					ele['on'+type] = handler;
+				}
+
+			})(),
+			unlisten = (function(){
+
+				if(window.removeEventListener){
+					return function(ele,type,handler){
+						ele.removeEventListener(type,handler);
+					}
+				}else if(window.detachEvent){
+					return function(ele,type,handler){
+						ele.detachEvent('on'+type,handler);
+					}
+				}else{
+					ele['on'+type] = null;
+				}
+
+			})();
+
+		function messageGet(e){//get message from iframe
+			if(e.origin == 'http://localhost'){
+				var data = JSON.parse(e.data);
+				console.log(data);
+
+			}
+		}
+
+		function frameLoad(e){//form has submit
+
+			e = e || window.event;
+			var target = e.target || e.srcElement;//the iframe
+			console.log('frame loaded');
+
+			target.contentWindow.postMessage('getData','http://localhost');//post message to the iframe
+			target = null;
+		}
+
+		function checkform(){
+			/*
+			*do something to verify form
+			*/
+			return true;
+		}
+
+		function formSubmit(e){
+			e = e || window.event;
+
+			if(!checkform()){
+				if(e.prevendDefault && e.cancelable){
+					e.prevendDefault();
+				}else{
+					e.returnValue && (e.returnValue = false);
+				}
+			}
+
+		}
+
+		listen(window,'load',windowLoad);
+		function windowLoad(){
+
+			listen(window,'message',messageGet);
+			listen(document.getElementById('myframe'),'load',frameLoad);
+			listen(document.forms['myform'],'submit',formSubmit);
+
+		}
+
+		listen(window,'unload',function(){
+			unlisten(window,'message',messageGet);
+			unlisten(document.getElementById('myframe'),'load',frameLoad);
+			unlisten(document.forms['myform'],'submit',formSubmit);
+			listen = unlisten = null;
+		});
+
+	</script>
+```
+###服务端
+```php
+<?php 
+
+	$res = json_encode(array(
+		'aa' => 'txt',
+		'bb' => 'data',
+		'time' => date("Y-m-d h:i:s",time())
+	));
+
+	//echo $res;
+$html = 
+<<<html
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<title>return</title>
+	</head>
+	<body>
+	
+	<script type="text/javascript">
+		var listen = (function(){
+
+			if(window.addEventListener){
+				return function(ele,type,handler){
+					ele.addEventListener(type,handler);
+				}
+			}else if(window.attachEvent){
+				return function(ele,type,handler){
+					ele.attachEvent('on'+type,handler)
+				}
+			}else{
+				ele['on'+type] = handler;
+			}
+
+		})();
+
+		listen(window,'message',function(e){
+			if(e.origin == 'http://bocai.com' && e.data == 'getData'){
+				e.source.postMessage(JSON.stringify({$res}),'http://bocai.com');
+			}
+
+		});
+
+	</script>
+
+
+	</body>
+	</html>
+html;
+	echo $html;
+
+ ?>
+```
+###返回的结果写入至iframe，让client和iframe通讯，获取返回结果；`注意，IE9及以下postMessage无法发送Object对象，所以只能用json压缩成字符串然后返回`
+
+----------
+至此，跨域上传文件完成
+## client代码和server代码已上传，亲测可用，兼容IE5+、chrome、firfox、opera、safari ##
+
+

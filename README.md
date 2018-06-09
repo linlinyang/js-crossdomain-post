@@ -171,10 +171,10 @@ html;
 
  ?>
 ```
-###返回的结果写入至iframe，让client和iframe通讯，获取返回结果；`注意，IE9及以下postMessage无法发送Object对象，所以只能用json压缩成字符串然后返回`
+###返回的结果写入至iframe，让client和iframe通讯，获取返回结果；`注意，IE9及以下postMessage无法发送Object对象（IE9及以下传送的只是Object.toString()处理的字符串），所以只能用json压缩成字符串然后返回`
 
 ----------
 至此，跨域上传文件完成
-## client代码和server代码已上传，亲测可用，兼容IE5+、chrome、firfox、opera、safari ##
+## client代码和server代码已上传，亲测可用，兼容IE8+(若想兼容更低版本，只需引入JSON兼容性对象)、chrome、firfox、opera、safari ##
 
-
+## 如有问题，欢迎指正，QQ：1634719517 ##

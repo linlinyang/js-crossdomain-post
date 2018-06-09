@@ -1,7 +1,5 @@
 <?php 
 
-	var_dump($_FILES);
-
 	$res = json_encode(array(
 		'aa' => 'txt',
 		'bb' => 'data',

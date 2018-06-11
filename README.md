@@ -27,6 +27,7 @@
 ###postMessage可以向包含在当前页面的iframe或者由当前页面打开的窗口传递数据，兼容性可以兼容至IE5，详情可查看[https://developer.mozilla.org/zh-CN/docs/Web/API/Window/postMessage](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/postMessage "MDN文档")。
 ###form提交后，监听iframe的load事件，然后向iframe发送消息，请求返回数据；在服务端就可以监听message事件，然后返回客户端所需要返回的数据；然后在客户端监听message事件，实现client和iframe（伪客户端）的通信；代码如下：
 ###客户端js
+## 使用jquery绑定message事件时，jquery对event对象进行了封装，不能获取通讯信息，请使用event.originalEvent ##
 ```js
 	<script type="text/javascript">
 		
